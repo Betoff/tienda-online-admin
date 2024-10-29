@@ -1,0 +1,405 @@
+mkdir tienda-online-admin
+cd tienda-online-admin
+git init
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f6fa;
+            --accent-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --text-color: #2c3e50;
+            --border-color: #dcdde1;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .product-form {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .size-input {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .size-input select,
+        .size-input input {
+            flex: 1;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #357abd;
+        }
+
+        button[type="button"] {
+            background-color: var(--accent-color);
+        }
+
+        .products-table {
+            width: 100%;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .edit-btn, .delete-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .edit-btn {
+            background-color: var(--accent-color);
+        }
+
+        .delete-btn {
+            background-color: var(--danger-color);
+        }
+
+        .file-input-container {
+            margin-bottom: 1rem;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 1rem;
+            background-color: var(--secondary-color);
+            border: 2px dashed var(--border-color);
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-store"></i> Gestión de Productos</h1>
+        
+        <form class="product-form" id="productForm">
+            <div class="form-group">
+                <label for="name">Nombre del producto</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="price">Precio</label>
+                <input type="number" id="price" name="price" step="0.01" required>
+            </div>
+
+            <div class="form-group">
+                <label for="category">Categoría</label>
+                <select id="category" name="category" required>
+                    <option value="">Seleccione una categoría</option>
+                    <option value="Pantalones">Pantalones</option>
+                    <option value="Remeras">Remeras</option>
+                    <option value="Buzos">Buzos</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Talles disponibles</label>
+                <div id="sizes">
+                    <div class="size-input">
+                        <select name="sizes[]">
+                            <option value="S">S</option>
+                            <option value="M">M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="42">42</option>
+                            <option value="44">44</option>
+                            <option value="46">46</option>
+                            <option value="48">48</option>
+                        </select>
+                        <input type="number" name="stock[]" placeholder="Stock disponible" required>
+                    </div>
+                </div>
+                <button type="button" onclick="addSizeInput()">
+                    <i class="fas fa-plus"></i> Agregar otro talle
+                </button>
+            </div>
+
+            <div class="form-group">
+                <div class="file-input-container">
+                    <label class="file-input-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Seleccionar imagen
+                        <input type="file" id="image" name="image" accept="image/*" required>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit">
+                <i class="fas fa-save"></i> Añadir Producto
+            </button>
+        </form>
+
+        <h2>Productos Existentes</h2>
+        <div class="products-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                        <th>Categoría</th>
+                        <th>Imagen</th>
+                        <th>Talles y Stock</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let products = [];
+        let currentId = 1;
+
+        function addSizeInput() {
+            const sizesDiv = document.getElementById('sizes');
+            const newSize = document.createElement('div');
+            newSize.className = 'size-input';
+            newSize.innerHTML = `
+                <select name="sizes[]">
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                    <option value="42">42</option>
+                    <option value="44">44</option>
+                    <option value="46">46</option>
+                    <option value="48">48</option>
+                </select>
+                <input type="number" name="stock[]" placeholder="Stock disponible" required>
+            `;
+            sizesDiv.appendChild(newSize);
+        }
+
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        document.getElementById('productForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const sizes = [];
+            const sizeSelects = document.getElementsByName('sizes[]');
+            const stockInputs = document.getElementsByName('stock[]');
+            
+            for(let i = 0; i < sizeSelects.length; i++) {
+                sizes.push({
+                    size: sizeSelects[i].value,
+                    stock: parseInt(stockInputs[i].value)
+                });
+            }
+
+            const imageFile = document.getElementById('image').files[0];
+            const imageData = imageFile ? await readFileAsDataURL(imageFile) : '';
+
+            const product = {
+                id: currentId++,
+                name: formData.get('name'),
+                price: parseFloat(formData.get('price')),
+                category: formData.get('category'),
+                sizes: sizes,
+                image: imageData
+            };
+
+            products.push(product);
+            updateProductsTable();
+            this.reset();
+        });
+
+        function updateProductsTable() {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = '';
+
+            products.forEach(product => {
+                const tr = document.createElement('tr');
+                const sizesText = product.sizes.map(s => `${s.size}:${s.stock}`).join(', ');
+                
+                tr.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>$${product.price}</td>
+                    <td>${product.category}</td>
+                    <td><img src="${product.image}" alt="Producto" class="product-image"></td>
+                    <td>${sizesText}</td>
+                    <td class="actions">
+                        <button class="edit-btn" onclick="editProduct(${product.id})">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="delete-btn" onclick="deleteProduct(${product.id})">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteProduct(id) {
+            if (confirm('¿Está seguro de eliminar este producto?')) {
+                products = products.filter(p => p.id !== id);
+                updateProductsTable();
+            }
+        }
+
+        function editProduct(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            document.getElementById('name').value = product.name;
+            document.getElementById('price').value = product.price;
+            document.getElementById('category').value = product.category;
+
+            // Limpiar y recrear los inputs de tallas
+            const sizesDiv = document.getElementById('sizes');
+            sizesDiv.innerHTML = '';
+            
+            product.sizes.forEach(size => {
+                const sizeInput = document.createElement('div');
+                sizeInput.className = 'size-input';
+                sizeInput.innerHTML = `
+                    <select name="sizes[]">
+                        <option value="S" ${size.size === 'S' ? 'selected' : ''}>S</option>
+                        <option value="M" ${size.size === 'M' ? 'selected' : ''}>M</option>
+                        <option value="L" ${size.size === 'L' ? 'selected' : ''}>L</option>
+                        <option value="XL" ${size.size === 'XL' ? 'selected' : ''}>XL</option>
+                        <option value="42" ${size.size === '42' ? 'selected' : ''}>42</option>
+                        <option value="44" ${size.size === '44' ? 'selected' : ''}>44</option>
+                        <option value="46" ${size.size === '46' ? 'selected' : ''}>46</option>
+                        <option value="48" ${size.size === '48' ? 'selected' : ''}>48</option>
+                    </select>
+                    <input type="number" name="stock[]" value="${size.stock}" required>
+                `;
+                sizesDiv.appendChild(sizeInput);
+            });
+
+            // Eliminar el producto actual y dejar que el formulario lo agregue como uno nuevo
+            products = products.filter(p => p.id !== id);
+            updateProductsTable();
+
+            // Hacer scroll hasta el formulario
+            document.querySelector('.product-form').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
+echo "# Panel Administrativo Tienda Online" > README.md
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/TU-USUARIO/tienda-online-admin.git
+git push -u origin main
