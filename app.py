@@ -8,7 +8,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 # Configure CORS to allow requests from GitHub Pages
-CORS(app, origins=[https://betoff.github.io/tienda-online-admin/])
+CORS(app, origins=["https://betoff.github.io/tienda-online-admin/"])
 
 # File to store products
 PRODUCTS_FILE = 'products.json'
