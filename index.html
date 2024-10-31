@@ -392,7 +392,31 @@
             document.querySelector('.product-form').scrollIntoView({ behavior: 'smooth' });
         }
     </script>
-</body>
+    <script>
+      // Backend configuration
+      const BACKEND_URL = 'https://tu-backend-url.onrender.com'; // Cambia esto por tu URL real
+
+      let products = [];
+
+      // Load existing products on start
+      async function loadProducts() {
+          try {
+              const response = await fetch(`${BACKEND_URL}/get_products`);
+              if (!response.ok) {
+                  throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              products = await response.json();
+              updateProductsTable();
+          } catch (error) {
+              console.error('Error al cargar productos:', error);
+              alert('Error al cargar los productos. Por favor, intenta de nuevo más tarde.');
+          }
+      }
+
+      // El resto del código JavaScript que te proporcioné...
+      // (Pega aquí todo el resto del código JavaScript del artifact anterior)
+    </script>
+  </body>
 </html>
 echo "# Panel Administrativo Tienda Online" > README.md
 git add .
