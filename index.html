@@ -255,166 +255,143 @@
     </div>
 
     <script>
-        let products = [];
-        let currentId = 1;
+// Backend configuration
+const BACKEND_URL = https://tienda-online-admin.onrender.com; // Change this to your real URL
 
-        function addSizeInput() {
-            const sizesDiv = document.getElementById('sizes');
-            const newSize = document.createElement('div');
-            newSize.className = 'size-input';
-            newSize.innerHTML = `
-                <select name="sizes[]">
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="42">42</option>
-                    <option value="44">44</option>
-                    <option value="46">46</option>
-                    <option value="48">48</option>
-                </select>
-                <input type="number" name="stock[]" placeholder="Stock disponible" required>
-            `;
-            sizesDiv.appendChild(newSize);
+let products = [];
+
+// Load existing products on start
+async function loadProducts() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/get_products`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        products = await response.json();
+        updateProductsTable();
+    } catch (error) {
+        console.error('Error al cargar productos:', error);
+        alert('Error al cargar los productos. Por favor, intenta de nuevo más tarde.');
+    }
+}
 
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
+// Modify form submit event
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        const formData = new FormData(this);
+        const sizes = [];
+        const sizeSelects = document.getElementsByName('sizes[]');
+        const stockInputs = document.getElementsByName('stock[]');
+        
+        for(let i = 0; i < sizeSelects.length; i++) {
+            sizes.push({
+                size: sizeSelects[i].value,
+                stock: parseInt(stockInputs[i].value)
             });
         }
 
-        document.getElementById('productForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const sizes = [];
-            const sizeSelects = document.getElementsByName('sizes[]');
-            const stockInputs = document.getElementsByName('stock[]');
-            
-            for(let i = 0; i < sizeSelects.length; i++) {
-                sizes.push({
-                    size: sizeSelects[i].value,
-                    stock: parseInt(stockInputs[i].value)
-                });
-            }
+        const imageFile = document.getElementById('image').files[0];
+        const imageData = imageFile ? await readFileAsDataURL(imageFile) : '';
 
-            const imageFile = document.getElementById('image').files[0];
-            const imageData = imageFile ? await readFileAsDataURL(imageFile) : '';
+        const product = {
+            name: formData.get('name'),
+            price: parseFloat(formData.get('price')),
+            category: formData.get('category'),
+            sizes: sizes,
+            image: imageData
+        };
 
-            const product = {
-                id: currentId++,
-                name: formData.get('name'),
-                price: parseFloat(formData.get('price')),
-                category: formData.get('category'),
-                sizes: sizes,
-                image: imageData
-            };
-
-            products.push(product);
-            updateProductsTable();
-            this.reset();
+        const response = await fetch(`${BACKEND_URL}/add_product`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(product)
         });
 
-        function updateProductsTable() {
-            const tbody = document.getElementById('productsTableBody');
-            tbody.innerHTML = '';
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-            products.forEach(product => {
-                const tr = document.createElement('tr');
-                const sizesText = product.sizes.map(s => `${s.size}:${s.stock}`).join(', ');
-                
-                tr.innerHTML = `
-                    <td>${product.name}</td>
-                    <td>$${product.price}</td>
-                    <td>${product.category}</td>
-                    <td><img src="${product.image}" alt="Producto" class="product-image"></td>
-                    <td>${sizesText}</td>
-                    <td class="actions">
-                        <button class="edit-btn" onclick="editProduct(${product.id})">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="delete-btn" onclick="deleteProduct(${product.id})">
-                            <i class="fas fa-trash"></i> Eliminar
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+        await loadProducts(); // Reload products list
+        this.reset();
+        alert('Producto agregado exitosamente');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar el producto. Por favor, intenta de nuevo.');
+    }
+});
+
+async function deleteProduct(id) {
+    if (confirm('¿Está seguro de eliminar este producto?')) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/delete_product/${id}`, {
+                method: 'DELETE'
             });
-        }
-
-        function deleteProduct(id) {
-            if (confirm('¿Está seguro de eliminar este producto?')) {
-                products = products.filter(p => p.id !== id);
-                updateProductsTable();
-            }
-        }
-
-        function editProduct(id) {
-            const product = products.find(p => p.id === id);
-            if (!product) return;
-
-            document.getElementById('name').value = product.name;
-            document.getElementById('price').value = product.price;
-            document.getElementById('category').value = product.category;
-
-            // Limpiar y recrear los inputs de tallas
-            const sizesDiv = document.getElementById('sizes');
-            sizesDiv.innerHTML = '';
             
-            product.sizes.forEach(size => {
-                const sizeInput = document.createElement('div');
-                sizeInput.className = 'size-input';
-                sizeInput.innerHTML = `
-                    <select name="sizes[]">
-                        <option value="S" ${size.size === 'S' ? 'selected' : ''}>S</option>
-                        <option value="M" ${size.size === 'M' ? 'selected' : ''}>M</option>
-                        <option value="L" ${size.size === 'L' ? 'selected' : ''}>L</option>
-                        <option value="XL" ${size.size === 'XL' ? 'selected' : ''}>XL</option>
-                        <option value="42" ${size.size === '42' ? 'selected' : ''}>42</option>
-                        <option value="44" ${size.size === '44' ? 'selected' : ''}>44</option>
-                        <option value="46" ${size.size === '46' ? 'selected' : ''}>46</option>
-                        <option value="48" ${size.size === '48' ? 'selected' : ''}>48</option>
-                    </select>
-                    <input type="number" name="stock[]" value="${size.stock}" required>
-                `;
-                sizesDiv.appendChild(sizeInput);
-            });
-
-            // Eliminar el producto actual y dejar que el formulario lo agregue como uno nuevo
-            products = products.filter(p => p.id !== id);
-            updateProductsTable();
-
-            // Hacer scroll hasta el formulario
-            document.querySelector('.product-form').scrollIntoView({ behavior: 'smooth' });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            await loadProducts();
+            alert('Producto eliminado exitosamente');
+        } catch (error) {
+            console.error('Error al eliminar el producto:', error);
+            alert('Error al eliminar el producto. Por favor, intenta de nuevo.');
         }
-    </script>
-    <script>
-      // Backend configuration
-      const BACKEND_URL = 'https://tu-backend-url.onrender.com'; // Cambia esto por tu URL real
+    }
+}
 
-      let products = [];
+async function editProduct(id) {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
 
-      // Load existing products on start
-      async function loadProducts() {
-          try {
-              const response = await fetch(`${BACKEND_URL}/get_products`);
-              if (!response.ok) {
-                  throw new Error(`HTTP error! status: ${response.status}`);
-              }
-              products = await response.json();
-              updateProductsTable();
-          } catch (error) {
-              console.error('Error al cargar productos:', error);
-              alert('Error al cargar los productos. Por favor, intenta de nuevo más tarde.');
-          }
-      }
+    try {
+        document.getElementById('name').value = product.name;
+        document.getElementById('price').value = product.price;
+        document.getElementById('category').value = product.category;
 
-      // El resto del código JavaScript que te proporcioné...
-      // (Pega aquí todo el resto del código JavaScript del artifact anterior)
+        // Update size inputs
+        const sizesDiv = document.getElementById('sizes');
+        sizesDiv.innerHTML = '';
+        
+        product.sizes.forEach(size => {
+            const sizeInput = document.createElement('div');
+            sizeInput.className = 'size-input';
+            sizeInput.innerHTML = `
+                <select name="sizes[]">
+                    <option value="S" ${size.size === 'S' ? 'selected' : ''}>S</option>
+                    <option value="M" ${size.size === 'M' ? 'selected' : ''}>M</option>
+                    <option value="L" ${size.size === 'L' ? 'selected' : ''}>L</option>
+                    <option value="XL" ${size.size === 'XL' ? 'selected' : ''}>XL</option>
+                    <option value="42" ${size.size === '42' ? 'selected' : ''}>42</option>
+                    <option value="44" ${size.size === '44' ? 'selected' : ''}>44</option>
+                    <option value="46" ${size.size === '46' ? 'selected' : ''}>46</option>
+                    <option value="48" ${size.size === '48' ? 'selected' : ''}>48</option>
+                </select>
+                <input type="number" name="stock[]" value="${size.stock}" required>
+            `;
+            sizesDiv.appendChild(sizeInput);
+        });
+
+        // Scroll to form
+        document.querySelector('.product-form').scrollIntoView({ behavior: 'smooth' });
+    } catch (error) {
+        console.error('Error al editar el producto:', error);
+        alert('Error al editar el producto. Por favor, intenta de nuevo.');
+    }
+}
+
+// Add global error handler
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    console.error('Error:', msg, '\nURL:', url, '\nLínea:', lineNo);
+    return false;
+};
+
+// Load products when page starts
+document.addEventListener('DOMContentLoaded', loadProducts);
     </script>
   </body>
 </html>
